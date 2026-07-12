@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: z-chat-backend
+    runtime: node
+    repo: https://github.com/your-org/z-chat
+    branch: main
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: PORT
+        value: "3001"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
