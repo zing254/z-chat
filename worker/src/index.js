@@ -165,7 +165,7 @@ export class Relay {
     const claims = await verifyJWT(p.token, this.env.JWT_SECRET || DEMO_SECRET);
     if (!claims || !claims.sub) {
       safeSend(server, { type: 'auth_failed', error: 'Invalid token' });
-      server.close();
+      setTimeout(() => server.close(), 100);
       return;
     }
     meta.userId = claims.sub;
