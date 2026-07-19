@@ -1,3 +1,6 @@
+# Replace `repo` with your real repository URL (or delete the line and
+# connect the repo from the Render dashboard). `branch` must match your
+# default branch (main or master).
 services:
   - type: web
     name: z-chat-backend
@@ -12,6 +15,9 @@ services:
         value: "3001"
       - key: JWT_SECRET
         generateValue: true
+      # Optional: set these to enable durable Postgres persistence.
+      # Without them the backend uses ephemeral file storage (`data/`),
+      # which is wiped on every deploy/restart — all users & messages are lost.
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY

@@ -5,7 +5,7 @@ import { loadKeyPair, saveKeyPair } from '../lib/store/keyStore';
 import { useAuth } from '../context/AuthContext';
 
 export function useEncryption() {
-  const { keyPair, signIn } = useAuth();
+  const { user, keyPair, signIn } = useAuth();
   const [ready, setReady] = useState(false);
   const [generating, setGenerating] = useState(false);
 
@@ -16,13 +16,18 @@ export function useEncryption() {
         stored = generateKeyPair();
         await saveKeyPair(stored);
       }
+      // AuthContext already restores the persisted identity from localStorage;
+      // bind the loaded keypair to it so the session survives a reload and
+      // previously-received ciphertext stays decryptable. When no identity
+      // exists yet (first visit), fall back to binding the keypair with a
+      // null user so encrypt/decrypt/getPublicKey still work.
       if (!keyPair) {
-        signIn(null, stored);
+        signIn(user || null, stored);
       }
       setReady(true);
     }
     init();
-  }, []);
+  }, [user, keyPair, signIn]);
 
   const generateNewKeyPair = useCallback(async () => {
     setGenerating(true);

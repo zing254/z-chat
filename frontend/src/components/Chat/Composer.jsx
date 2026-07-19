@@ -1,17 +1,30 @@
 import { useState, useRef, useCallback } from 'react';
 
-export default function Composer({ onSend, disabled = false }) {
+export default function Composer({ onSend, onTyping, disabled = false }) {
   const [text, setText] = useState('');
   const [ephemeral, setEphemeral] = useState(false);
   const editorRef = useRef(null);
+  const typingRef = useRef(false);
+
+  const notifyTyping = useCallback((isTyping) => {
+    if (disabled) return;
+    if (isTyping && !typingRef.current) {
+      typingRef.current = true;
+      onTyping?.(true);
+    } else if (!isTyping && typingRef.current) {
+      typingRef.current = false;
+      onTyping?.(false);
+    }
+  }, [disabled, onTyping]);
 
   const handleSend = useCallback(() => {
     const content = text.trim();
     if (!content || disabled) return;
+    notifyTyping(false);
     onSend(content, ephemeral);
     setText('');
     if (editorRef.current) editorRef.current.textContent = '';
-  }, [text, ephemeral, onSend, disabled]);
+  }, [text, ephemeral, onSend, disabled, notifyTyping]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.metaKey || e.ctrlKey) {
@@ -28,6 +41,12 @@ export default function Composer({ onSend, disabled = false }) {
     document.execCommand('insertText', false, pasted);
   }, []);
 
+  const handleInput = useCallback((e) => {
+    const value = e.currentTarget.textContent || '';
+    setText(value);
+    notifyTyping(value.trim().length > 0);
+  }, [notifyTyping]);
+
   return (
     <div className="glass border-t border-glass-border px-4 py-3 flex items-end gap-3">
       <div className="flex-1 min-h-[40px]">
@@ -35,7 +54,7 @@ export default function Composer({ onSend, disabled = false }) {
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          onInput={(e) => setText(e.currentTarget.textContent || '')}
+          onInput={handleInput}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           data-placeholder="Type a message... (⌘+Enter to send)"

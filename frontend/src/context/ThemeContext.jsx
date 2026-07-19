@@ -13,7 +13,7 @@ export function ThemeProvider({ children }) {
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div className={themeClass}>{children}</div>
+      <div className={`${themeClass} h-full`}>{children}</div>
     </ThemeContext.Provider>
   );
 }

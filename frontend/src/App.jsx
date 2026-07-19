@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GhostModeProvider } from './context/GhostModeContext';
+import { TypingProvider } from './context/TypingContext';
 import ErrorBoundary from './components/UI/ErrorBoundary';
 import AuthPortal from './pages/AuthPortal';
 import InboxList from './pages/InboxList';
@@ -24,9 +25,10 @@ function PublicRoute({ children }) {
 export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <GhostModeProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <GhostModeProvider>
+              <TypingProvider>
             <div className="h-screen w-screen bg-bg-void overflow-hidden">
               <Routes>
                 <Route path="/" element={<PublicRoute><AuthPortal /></PublicRoute>} />
@@ -37,9 +39,10 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </div>
-          </GhostModeProvider>
-        </AuthProvider>
-      </ThemeProvider>
+              </TypingProvider>
+            </GhostModeProvider>
+          </AuthProvider>
+        </ThemeProvider>
     </ErrorBoundary>
   );
 }

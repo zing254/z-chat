@@ -68,5 +68,3 @@ Object.defineProperty(globalThis, 'IDBVersionChangeEvent', {
   writable: true,
   configurable: true,
 });
-
-console.log('[setup] DONE');

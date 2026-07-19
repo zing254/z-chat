@@ -16,7 +16,7 @@ function MessageList({ messages, onMessageTap }, ref) {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
-  }, [messages.length]);
+  }, [messages]);
 
   return (
     <div ref={listRef} className="h-full overflow-y-auto py-2 space-y-0.5">

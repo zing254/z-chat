@@ -63,6 +63,5 @@ test.describe('Z-Chat E2E', () => {
     await page.getByRole('button', { name: /send message/i }).click();
 
     await expect(page.getByText('Phantom handshake established')).toBeVisible();
-    await expect(page.getByText('Phantom handshake established')).toBeVisible();
   });
 });

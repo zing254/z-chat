@@ -1,7 +1,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGhostMode } from '../context/GhostModeContext';
+import { useTyping } from '../context/TypingContext';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useMessages } from '../hooks/useMessages';
 import { getContact } from '../lib/contacts';
@@ -11,32 +12,43 @@ import MessageList from '../components/Chat/MessageList';
 import Composer from '../components/Chat/Composer';
 import TypingIndicator from '../components/Chat/TypingIndicator';
 import DissolveEffect from '../components/Chat/DissolveEffect';
+import { playSendSound, playReceiveSound, playDissolveSound } from '../lib/audio/effects';
 
 export default function ChatWindow() {
   const { userId } = useParams();
+  const location = useLocation();
   const { user } = useAuth();
   const { ghostMode } = useGhostMode();
+  const { setTypingFor } = useTyping();
   const { messages, loadMessages, addIncoming, addOutgoing, updateStatus, markAsBurned } = useMessages(userId);
 
-  const [contact, setContact] = useState(() => getContact(userId));
+  const [contact, setContact] = useState(
+    () => location.state?.contact || { userId, username: '…', publicKey: '', status: 'offline' }
+  );
   const [isTyping, setIsTyping] = useState(false);
   const [dissolving, setDissolving] = useState(null);
   const [connecting, setConnecting] = useState(true);
 
   const listRef = useRef(null);
   const burnTimers = useRef(new Map());
+  const burnedRef = useRef(new Set());
+  const readReceipts = useRef(new Set());
 
   useEffect(() => {
-    setContact(getContact(userId));
+    getContact(userId).then(setContact);
   }, [userId]);
 
   const handleMessage = useCallback((payload) => {
     addIncoming(payload);
+    playReceiveSound();
     if (payload.ttl > 0) {
       const timer = createTTLTimer(payload.ttl, () => {
-        markAsBurned(payload.messageId);
-        sendDeleteRef.current(payload.messageId);
-        burnTimers.current.delete(payload.messageId);
+        const id = payload.messageId;
+        if (burnedRef.current.has(id)) return;
+        burnedRef.current.add(id);
+        markAsBurned(id);
+        sendDeleteRef.current(id);
+        burnTimers.current.delete(id);
       });
       burnTimers.current.set(payload.messageId, timer);
     }
@@ -48,7 +60,8 @@ export default function ChatWindow() {
 
   const handleTyping = useCallback((payload) => {
     setIsTyping(payload.isTyping);
-  }, []);
+    setTypingFor(payload.senderId, payload.isTyping);
+  }, [setTypingFor]);
 
   const handlePresence = useCallback((payload) => {
     if (payload.userId === userId) {
@@ -56,11 +69,12 @@ export default function ChatWindow() {
     }
   }, [userId]);
 
-  const { connected, sendMessage, sendDelete } = useWebSocket({
+  const { connected, sendMessage, sendDelete, sendStatus, sendTyping } = useWebSocket({
     onMessage: handleMessage,
     onStatusUpdate: handleStatusUpdate,
     onTyping: handleTyping,
     onPresence: handlePresence,
+    onDelete: (p) => markAsBurned(p.messageId),
     ghost: ghostMode,
   });
 
@@ -83,10 +97,26 @@ export default function ChatWindow() {
     };
   }, []);
 
+  // Send read receipts for incoming messages once we're connected.
+  useEffect(() => {
+    if (!connected) return;
+    messages.forEach(m => {
+      if (m.direction === 'incoming' && m.status !== 'read' && !readReceipts.current.has(m.messageId)) {
+        readReceipts.current.add(m.messageId);
+        sendStatus(m.senderId, m.messageId, 'read');
+      }
+    });
+  }, [messages, connected, sendStatus]);
+
   const handleSend = useCallback(async (text, ephemeral) => {
     const ttl = ephemeral ? 3 : 0;
+    if (!contact.publicKey) {
+      console.error('No public key for recipient; cannot encrypt');
+      return;
+    }
     try {
       const msgData = await addOutgoing(text, userId, contact.publicKey, ttl);
+      playSendSound();
       sendMessage({
         recipientId: userId,
         ciphertext: msgData.ciphertext,
@@ -102,14 +132,27 @@ export default function ChatWindow() {
 
   const handleMessageTap = useCallback((message) => {
     if (message.ttl > 0 && message.direction === 'incoming' && !message.isBurned) {
+      // Cancel the auto-burn timer so we don't burn twice.
+      const timer = burnTimers.current.get(message.messageId);
+      if (timer) {
+        clearInterval(timer);
+        burnTimers.current.delete(message.messageId);
+      }
       setDissolving({ messageId: message.messageId, text: message.plaintext || '...' });
     }
   }, []);
 
   const handleDissolveComplete = useCallback(() => {
     if (!dissolving) return;
-    markAsBurned(dissolving.messageId);
-    sendDelete(dissolving.messageId);
+    const id = dissolving.messageId;
+    if (burnedRef.current.has(id)) {
+      setDissolving(null);
+      return;
+    }
+    burnedRef.current.add(id);
+    markAsBurned(id);
+    sendDelete(id);
+    playDissolveSound();
     setDissolving(null);
   }, [dissolving, markAsBurned, sendDelete]);
 
@@ -151,7 +194,11 @@ export default function ChatWindow() {
         </div>
       )}
 
-      <Composer onSend={handleSend} disabled={!connected} />
+      <Composer
+        onSend={handleSend}
+        onTyping={(v) => sendTyping(userId, v)}
+        disabled={!connected}
+      />
     </div>
   );
 }

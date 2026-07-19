@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useEncryption } from '../hooks/useEncryption';
 import { encodeBase64 } from 'tweetnacl-util';
 import { generateUserId } from '../utils/identity';
+import { registerUser } from '../lib/api';
 import ParticleMatrix from '../components/Auth/ParticleMatrix';
 import GlassCard from '../components/UI/GlassCard';
 import NeonButton from '../components/UI/NeonButton';
@@ -32,10 +33,18 @@ export default function AuthPortal() {
 
     try {
       const kp = await generateNewKeyPair();
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, 300));
 
       const userId = generateUserId();
       const publicKeyStr = encodeBase64(kp.publicKey);
+
+      // Publish our public key to the shared directory so others can message us.
+      // If the relay is unreachable we still proceed in local-only mode.
+      try {
+        await registerUser({ userId, username: trimmed, publicKey: publicKeyStr });
+      } catch (regErr) {
+        console.warn('Backend registration skipped (local-only mode):', regErr.message);
+      }
 
       signIn(
         { id: userId, username: trimmed, publicKey: publicKeyStr },

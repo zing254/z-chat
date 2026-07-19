@@ -1,24 +1,25 @@
 :root {
-  --neon-cyan: #00F0FF;
-  --neon-violet: #B026FF;
-  --danger-orange: #FF4500;
-  --bg-void: #0A0A0F;
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-blur: blur(24px) saturate(180%);
-  --text-primary: #FFFFFF;
-  --text-meta: #A1A1AA;
-  --text-placeholder: #52525B;
+  --neon-cyan: 0 240 255;
+  --neon-violet: 176 38 255;
+  --danger-orange: 255 69 0;
+  --bg-void: 10 10 15;
+  --text-primary: 255 255 255;
+  --text-meta: 161 161 170;
+  --text-placeholder: 82 82 91;
+  --glass-bg: 255 255 255;
+  --glass-bg-alpha: 0.05;
+  --glass-border: 255 255 255;
+  --glass-border-alpha: 0.06;
 }
 
 .theme-midnight {
-  --neon-cyan: #00FF9D;
-  --neon-violet: #7B2FFF;
-  --bg-void: #0A0A12;
+  --neon-cyan: 0 255 157;
+  --neon-violet: 123 47 255;
+  --bg-void: 10 10 18;
 }
 
 .theme-ghost {
-  --neon-cyan: #00FF41;
-  --neon-violet: #00FF41;
-  --bg-void: #121414;
+  --neon-cyan: 0 255 65;
+  --neon-violet: 0 255 65;
+  --bg-void: 18 20 20;
 }

@@ -77,7 +77,7 @@ export function useWebSocket({ onMessage, onStatusUpdate, onPresence, onTyping, 
       console.error('WebSocket connection failed:', err);
       scheduleReconnect();
     }
-  }, [user]);
+  }, [user?.id]);
 
   function scheduleReconnect() {
     if (reconnectTimer.current) return;

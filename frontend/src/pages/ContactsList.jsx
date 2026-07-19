@@ -1,14 +1,29 @@
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { searchContacts } from '../lib/contacts';
+import { useAuth } from '../context/AuthContext';
+import { loadDirectory, searchDirectory } from '../lib/contacts';
 import TopBar from '../components/UI/TopBar';
 import Identicon from '../components/UI/Identicon';
 
 export default function ContactsList() {
   const [search, setSearch] = useState('');
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const filtered = searchContacts(search);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const dir = await loadDirectory(user?.id);
+    setContacts(dir);
+    setLoading(false);
+  }, [user?.id]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const filtered = search ? searchDirectory(search) : contacts;
 
   return (
     <div className="h-full flex flex-col">
@@ -34,20 +49,26 @@ export default function ContactsList() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 space-y-1">
-        {filtered.map(contact => (
-          <div
-            key={contact.id}
-            onClick={() => navigate(`/chat/${contact.id}`)}
-            className="glass cursor-pointer hover:scale-[1.02] transition-transform duration-200 px-4 py-3 flex items-center gap-3"
-          >
-            <Identicon publicKey={contact.publicKey} size={40} status={contact.status} />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-space text-sm font-semibold text-text-primary truncate">{contact.username}</h3>
-              <p className="font-body text-xs text-text-meta capitalize">{contact.status}</p>
+        {loading ? (
+          <p className="text-text-meta text-sm text-center py-8 font-body">Loading contacts…</p>
+        ) : (
+          filtered.map(contact => (
+            <div
+              key={contact.userId}
+              onClick={() => navigate(`/chat/${contact.userId}`, { state: { contact } })}
+              className="glass cursor-pointer hover:scale-[1.02] transition-transform duration-200 px-4 py-3 flex items-center gap-3"
+            >
+              <Identicon publicKey={contact.publicKey} size={40} status={contact.status || 'offline'} />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-space text-sm font-semibold text-text-primary truncate">{contact.username}</h3>
+                <p className="font-body text-xs text-text-meta truncate">
+                  {contact.demo ? 'Demo contact' : (contact.status === 'online' ? 'Online member' : 'Offline')}
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
-        {filtered.length === 0 && (
+          ))
+        )}
+        {!loading && filtered.length === 0 && (
           <p className="text-text-meta text-sm text-center py-8 font-body">
             {search ? `No contacts matching "${search}"` : 'No contacts yet'}
           </p>
