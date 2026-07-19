@@ -25,7 +25,7 @@ async function signJWT(payload, secret) {
   const header = toBase64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const body = toBase64Url(JSON.stringify(payload));
   const data = `${header}.${body}`;
-  const sig = await crypto.subtle.sign('HMAC-SHA-256', await getKey(secret), enc.encode(data));
+  const sig = await crypto.subtle.sign('HMAC', await getKey(secret), enc.encode(data));
   return `${data}.${toBase64Url(new Uint8Array(sig))}`;
 }
 async function verifyJWT(token, secret) {
@@ -33,7 +33,7 @@ async function verifyJWT(token, secret) {
   const parts = token.split('.');
   if (parts.length !== 3) return null;
   const data = `${parts[0]}.${parts[1]}`;
-  const ok = await crypto.subtle.verify('HMAC-SHA-256', await getKey(secret), fromBase64Url(parts[2]), enc.encode(data));
+  const ok = await crypto.subtle.verify('HMAC', await getKey(secret), fromBase64Url(parts[2]), enc.encode(data));
   if (!ok) return null;
   try { return JSON.parse(dec.decode(fromBase64Url(parts[1]))); } catch { return null; }
 }
@@ -72,9 +72,6 @@ export class Relay {
     const url = new URL(request.url);
     if (request.headers.get('Upgrade') === 'websocket') return this.handleWebSocket(request);
     if (request.method === 'OPTIONS') return corsPreflight();
-    if (request.method === 'GET' && url.pathname === '/diag') {
-      return json({ crypto: typeof crypto, subtle: (typeof crypto !== 'undefined' && crypto) ? typeof crypto.subtle : 'no-crypto', gCrypto: typeof globalThis.crypto });
-    }
     if (request.method === 'POST') {
       let body = {};
       try { body = await request.json(); } catch {}
@@ -108,12 +105,8 @@ export class Relay {
       users[userId].username = username;
       await this.state.storage.put('users', users);
     }
-    try {
-      const token = await signJWT({ sub: userId, username: users[userId].username }, this.env.JWT_SECRET || DEMO_SECRET);
-      return json({ token, userId });
-    } catch (e) {
-      return json({ error: 'sign_failed', detail: String((e && e.message) || e) }, 500);
-    }
+    const token = await signJWT({ sub: userId, username: users[userId].username }, this.env.JWT_SECRET || DEMO_SECRET);
+    return json({ token, userId });
   }
 
   async listUsers(exclude) {
