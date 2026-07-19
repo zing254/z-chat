@@ -29,13 +29,17 @@ async function signJWT(payload, secret) {
   return `${data}.${toBase64Url(new Uint8Array(sig))}`;
 }
 async function verifyJWT(token, secret) {
-  if (typeof token !== 'string') return null;
-  const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  const data = `${parts[0]}.${parts[1]}`;
-  const ok = await crypto.subtle.verify('HMAC', await getKey(secret), fromBase64Url(parts[2]), enc.encode(data));
-  if (!ok) return null;
-  try { return JSON.parse(dec.decode(fromBase64Url(parts[1]))); } catch { return null; }
+  try {
+    if (typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const data = `${parts[0]}.${parts[1]}`;
+    const ok = await crypto.subtle.verify('HMAC', await getKey(secret), fromBase64Url(parts[2]), enc.encode(data));
+    if (!ok) return null;
+    return JSON.parse(dec.decode(fromBase64Url(parts[1])));
+  } catch {
+    return null;
+  }
 }
 
 function json(obj, status = 200) {
