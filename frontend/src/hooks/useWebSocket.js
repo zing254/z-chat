@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-const WS_URL = import.meta.env.VITE_WS_URL || `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:3001`;
 const API_BASE = import.meta.env.VITE_API_URL || '';
+const WS_URL =
+  import.meta.env.VITE_WS_URL ||
+  (API_BASE ? API_BASE.replace(/^http/, 'ws') : `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:3001`);
 
 export function useWebSocket({ onMessage, onStatusUpdate, onPresence, onTyping, onDelete, ghost = false }) {
   const { user } = useAuth();
