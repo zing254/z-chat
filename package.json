@@ -9,8 +9,7 @@
     "test": "cd frontend && npm run test",
     "test:e2e": "cd frontend && npx playwright test",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
-    "start": "node backend/src/server.js",
-    "postinstall": "npm install --prefix backend"
+    "start": "node backend/src/server.js"
   },
   "devDependencies": {
     "concurrently": "^9.0.1"
