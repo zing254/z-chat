@@ -58,6 +58,8 @@ function safeSend(ws, obj) {
   try { ws.send(JSON.stringify(obj)); return true; } catch { return false; }
 }
 
+const DEMO_SECRET = 'zchat-demo-secret-change-me';
+
 export class Relay {
   constructor(state, env) {
     this.state = state;
@@ -103,7 +105,7 @@ export class Relay {
       users[userId].username = username;
       await this.state.storage.put('users', users);
     }
-    const token = await signJWT({ sub: userId, username: users[userId].username }, this.env.JWT_SECRET);
+    const token = await signJWT({ sub: userId, username: users[userId].username }, this.env.JWT_SECRET || DEMO_SECRET);
     return json({ token, userId });
   }
 
@@ -160,7 +162,7 @@ export class Relay {
   }
 
   async onAuth(server, meta, p) {
-    const claims = await verifyJWT(p.token, this.env.JWT_SECRET);
+    const claims = await verifyJWT(p.token, this.env.JWT_SECRET || DEMO_SECRET);
     if (!claims || !claims.sub) {
       safeSend(server, { type: 'auth_failed', error: 'Invalid token' });
       server.close();
