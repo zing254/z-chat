@@ -72,6 +72,9 @@ export class Relay {
     const url = new URL(request.url);
     if (request.headers.get('Upgrade') === 'websocket') return this.handleWebSocket(request);
     if (request.method === 'OPTIONS') return corsPreflight();
+    if (request.method === 'GET' && url.pathname === '/diag') {
+      return json({ crypto: typeof crypto, subtle: (typeof crypto !== 'undefined' && crypto) ? typeof crypto.subtle : 'no-crypto', gCrypto: typeof globalThis.crypto });
+    }
     if (request.method === 'POST') {
       let body = {};
       try { body = await request.json(); } catch {}
@@ -105,8 +108,12 @@ export class Relay {
       users[userId].username = username;
       await this.state.storage.put('users', users);
     }
-    const token = await signJWT({ sub: userId, username: users[userId].username }, this.env.JWT_SECRET || DEMO_SECRET);
-    return json({ token, userId });
+    try {
+      const token = await signJWT({ sub: userId, username: users[userId].username }, this.env.JWT_SECRET || DEMO_SECRET);
+      return json({ token, userId });
+    } catch (e) {
+      return json({ error: 'sign_failed', detail: String((e && e.message) || e) }, 500);
+    }
   }
 
   async listUsers(exclude) {
