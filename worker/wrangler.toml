@@ -10,4 +10,4 @@ durable_objects.bindings = [
 
 [[migrations]]
 tag = "v1"
-new_classes = ["Relay"]
+new_sqlite_classes = ["Relay"]
