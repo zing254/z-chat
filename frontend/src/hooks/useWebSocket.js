@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const WS_URL = import.meta.env.VITE_WS_URL || `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:3001`;
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export function useWebSocket({ onMessage, onStatusUpdate, onPresence, onTyping, onDelete, ghost = false }) {
   const { user } = useAuth();
@@ -19,7 +20,7 @@ export function useWebSocket({ onMessage, onStatusUpdate, onPresence, onTyping, 
     if (!user) return;
 
     try {
-      const tokenRes = await fetch('/api/auth/token', {
+      const tokenRes = await fetch(`${API_BASE}/api/auth/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, username: user.username }),
